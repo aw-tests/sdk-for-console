@@ -2,9 +2,10 @@ let sdk = new Appwrite();
 
 sdk
     .setProject('')
+    .setKey('')
 ;
 
-let promise = sdk.storage.list();
+let promise = sdk.storage.deleteFile('[FILE_ID]');
 
 promise.then(function (response) {
     console.log(response);
