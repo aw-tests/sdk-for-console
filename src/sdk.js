@@ -67,7 +67,7 @@
                 globalParams.push({key: key, value: value});
             };
 
-            addGlobalHeader('x-sdk-version', ':javascript:1.0.28');
+            addGlobalHeader('x-sdk-version', ':javascript:1.0.0');
             addGlobalHeader('content-type', '');
 
             /**
