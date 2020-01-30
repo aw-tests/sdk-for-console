@@ -2,6 +2,7 @@ let sdk = new Appwrite();
 
 sdk
     .setProject('')
+    .setKey('')
 ;
 
 let promise = sdk.storage.getView('[FILE_ID]');
