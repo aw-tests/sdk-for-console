@@ -1,0 +1,14 @@
+{
+  "name": "appwrite",
+  "homepage": "",
+  "description": "",
+  "version": "1.0.28",
+  "license": "BSD-3-Clause",
+  "main": "src/sdk.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/appwrite/sdk-for-console"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
