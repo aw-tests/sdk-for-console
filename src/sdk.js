@@ -25,7 +25,7 @@
         /**
          * Set Project
          *
-         * Your Appwrite project ID
+         * Your project ID
          *
          * @param value string
          *
@@ -43,7 +43,7 @@
         /**
          * Set Key
          *
-         * Your Appwrite project secret key
+         * Your secret API key
          *
          * @param value string
          *
@@ -321,26 +321,12 @@
             /**
              * Create Account
              *
-             * Use this endpoint to allow a new user to register an account in your
-             * project. Use the success and failure URLs to redirect users back to your
-             * application after signup completes.
-             * 
-             * If registration completes successfully user will be sent with a
-             * confirmation email in order to confirm he is the owner of the account email
-             * address. Use the confirmation parameter to redirect the user from the
-             * confirmation email back to your app. When the user is redirected, use the
-             * /auth/confirm endpoint to complete the account confirmation.
-             * 
-             * Please note that in order to avoid a [Redirect
-             * Attack](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)
-             * the only valid redirect URLs are the ones from domains you have set when
-             * adding your platforms in the console interface.
-             * 
-             * When accessing this route using Javascript from the browser, success and
-             * failure parameter URLs are required. Appwrite server will respond with a
-             * 301 redirect status code and will set the user session cookie. This
-             * behavior is enforced because modern browsers are limiting 3rd party cookies
-             * in XHR of fetch requests to protect user privacy.
+             * Use this endpoint to allow a new user to register a new account in your
+             * project. After the user registration completes successfully, you can use
+             * the [/account/verfication](/docs/account#createVerification) route to start
+             * verifying the user email address. To allow your new user to login to his
+             * new account, you need to create a new [account
+             * session](/docs/account#createSession).
              *
              * @param {string} email
              * @param {string} password
@@ -531,7 +517,7 @@
             /**
              * Get Account Preferences
              *
-             * Get currently logged in user preferences key-value object.
+             * Get currently logged in user preferences as a key-value object.
              *
              * @throws {Error}
              * @return {Promise}             
@@ -553,7 +539,7 @@
              * Update currently logged in user account preferences. You can pass only the
              * specific settings you wish to update.
              *
-             * @param {string} prefs
+             * @param {object} prefs
              * @throws {Error}
              * @return {Promise}             
              */
@@ -577,13 +563,14 @@
             },
 
             /**
-             * Password Recovery
+             * Create Password Recovery
              *
              * Sends the user an email with a temporary secret key for password reset.
              * When the user clicks the confirmation link he is redirected back to your
              * app password reset URL with the secret key and email address values
              * attached to the URL query string. Use the query string params to submit a
-             * request to the /auth/password/reset endpoint to complete the process.
+             * request to the [PUT /account/recovery](/docs/account#updateRecovery)
+             * endpoint to complete the process.
              *
              * @param {string} email
              * @param {string} url
@@ -618,12 +605,12 @@
             },
 
             /**
-             * Password Reset
+             * Complete Password Recovery
              *
              * Use this endpoint to complete the user account password reset. Both the
              * **userId** and **secret** arguments will be passed as query parameters to
-             * the redirect URL you have provided when sending your request to the
-             * /auth/recovery endpoint.
+             * the redirect URL you have provided when sending your request to the [POST
+             * /account/recovery](/docs/account#createRecovery) endpoint.
              * 
              * Please note that in order to avoid a [Redirect
              * Attack](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)
@@ -704,19 +691,7 @@
              * Create Account Session
              *
              * Allow the user to login into his account by providing a valid email and
-             * password combination. Use the success and failure arguments to provide a
-             * redirect URL's back to your app when login is completed. 
-             * 
-             * Please note that in order to avoid a [Redirect
-             * Attack](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)
-             * the only valid redirect URLs are the ones from domains you have set when
-             * adding your platforms in the console interface.
-             * 
-             * When accessing this route using Javascript from the browser, success and
-             * failure parameter URLs are required. Appwrite server will respond with a
-             * 301 redirect status code and will set the user session cookie. This
-             * behavior is enforced because modern browsers are limiting 3rd party cookies
-             * in XHR of fetch requests to protect user privacy.
+             * password combination. This route will create a new session for the user.
              *
              * @param {string} email
              * @param {string} password
@@ -771,31 +746,10 @@
             },
 
             /**
-             * Delete Current Account Session
+             * Create Account Session with OAuth2
              *
-             * Use this endpoint to log out the currently logged in user from his account.
-             * When successful this endpoint will delete the user session and remove the
-             * session secret cookie from the user client.
-             *
-             * @throws {Error}
-             * @return {Promise}             
-             */
-            deleteCurrentSession: function() {
-                let path = '/account/sessions/current';
-
-                let payload = {};
-
-                return http
-                    .delete(path, {
-                        'content-type': 'application/json',
-                    }, payload);
-            },
-
-            /**
-             * Create Account Session with OAuth
-             *
-             * Allow the user to login to his account using the OAuth provider of his
-             * choice. Each OAuth provider should be enabled from the Appwrite console
+             * Allow the user to login to his account using the OAuth2 provider of his
+             * choice. Each OAuth2 provider should be enabled from the Appwrite console
              * first. Use the success and failure arguments to provide a redirect URL's
              * back to your app when login is completed.
              *
@@ -803,9 +757,9 @@
              * @param {string} success
              * @param {string} failure
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
-            createOAuthSession: function(provider, success, failure) {
+            createOAuth2Session: function(provider, success, failure) {
                 if(provider === undefined) {
                     throw new Error('Missing required parameter: "provider"');
                 }
@@ -818,7 +772,7 @@
                     throw new Error('Missing required parameter: "failure"');
                 }
                 
-                let path = '/account/sessions/oauth/{provider}'.replace(new RegExp('{provider}', 'g'), provider);
+                let path = '/account/sessions/oauth2/{provider}'.replace(new RegExp('{provider}', 'g'), provider);
 
                 let payload = {};
 
@@ -830,10 +784,13 @@
                     payload['failure'] = failure;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+                let query = Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&');
+
+                return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -843,16 +800,16 @@
              * account sessions across all his different devices. When using the option id
              * argument, only the session unique ID provider will be deleted.
              *
-             * @param {string} id
+             * @param {string} sessionId
              * @throws {Error}
              * @return {Promise}             
              */
-            deleteSession: function(id) {
-                if(id === undefined) {
-                    throw new Error('Missing required parameter: "id"');
+            deleteSession: function(sessionId) {
+                if(sessionId === undefined) {
+                    throw new Error('Missing required parameter: "sessionId"');
                 }
                 
-                let path = '/account/sessions/{id}'.replace(new RegExp('{id}', 'g'), id);
+                let path = '/account/sessions/{sessionId}'.replace(new RegExp('{sessionId}', 'g'), sessionId);
 
                 let payload = {};
 
@@ -863,7 +820,7 @@
             },
 
             /**
-             * Create Verification
+             * Create Email Verification
              *
              * Use this endpoint to send a verification message to your user email address
              * to confirm they are the valid owners of that address. Both the **userId**
@@ -903,7 +860,7 @@
             },
 
             /**
-             * Updated Verification
+             * Complete Email Verification
              *
              * Use this endpoint to complete the user email verification process. Use both
              * the **userId** and **secret** parameters that were attached to your app URL
@@ -912,21 +869,16 @@
              *
              * @param {string} userId
              * @param {string} secret
-             * @param {string} passwordB
              * @throws {Error}
              * @return {Promise}             
              */
-            updateVerification: function(userId, secret, passwordB) {
+            updateVerification: function(userId, secret) {
                 if(userId === undefined) {
                     throw new Error('Missing required parameter: "userId"');
                 }
                 
                 if(secret === undefined) {
                     throw new Error('Missing required parameter: "secret"');
-                }
-                
-                if(passwordB === undefined) {
-                    throw new Error('Missing required parameter: "passwordB"');
                 }
                 
                 let path = '/account/verification';
@@ -939,10 +891,6 @@
 
                 if(secret) {
                     payload['secret'] = secret;
-                }
-
-                if(passwordB) {
-                    payload['password-b'] = passwordB;
                 }
 
                 return http
@@ -1420,7 +1368,7 @@
              * @throws {Error}
              * @return {Promise}             
              */
-            listDocuments: function(collectionId, filters = [], offset = 0, limit = 50, orderField = '$uid', orderType = 'ASC', orderCast = 'string', search = '', first = 0, last = 0) {
+            listDocuments: function(collectionId, filters = [], offset = 0, limit = 50, orderField = '$id', orderType = 'ASC', orderCast = 'string', search = '', first = 0, last = 0) {
                 if(collectionId === undefined) {
                     throw new Error('Missing required parameter: "collectionId"');
                 }
@@ -1477,7 +1425,7 @@
              * Create a new Document.
              *
              * @param {string} collectionId
-             * @param {string} data
+             * @param {object} data
              * @param {array} read
              * @param {array} write
              * @param {string} parentDocument
@@ -1573,7 +1521,7 @@
              *
              * @param {string} collectionId
              * @param {string} documentId
-             * @param {string} data
+             * @param {object} data
              * @param {array} read
              * @param {array} write
              * @throws {Error}
@@ -2016,6 +1964,145 @@
             },
 
             /**
+             * List Domains
+             *
+             *
+             * @param {string} projectId
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            listDomains: function(projectId) {
+                if(projectId === undefined) {
+                    throw new Error('Missing required parameter: "projectId"');
+                }
+                
+                let path = '/projects/{projectId}/domains'.replace(new RegExp('{projectId}', 'g'), projectId);
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Create Domain
+             *
+             *
+             * @param {string} projectId
+             * @param {string} domain
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            createDomain: function(projectId, domain) {
+                if(projectId === undefined) {
+                    throw new Error('Missing required parameter: "projectId"');
+                }
+                
+                if(domain === undefined) {
+                    throw new Error('Missing required parameter: "domain"');
+                }
+                
+                let path = '/projects/{projectId}/domains'.replace(new RegExp('{projectId}', 'g'), projectId);
+
+                let payload = {};
+
+                if(domain) {
+                    payload['domain'] = domain;
+                }
+
+                return http
+                    .post(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Domain
+             *
+             *
+             * @param {string} projectId
+             * @param {string} domainId
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getDomain: function(projectId, domainId) {
+                if(projectId === undefined) {
+                    throw new Error('Missing required parameter: "projectId"');
+                }
+                
+                if(domainId === undefined) {
+                    throw new Error('Missing required parameter: "domainId"');
+                }
+                
+                let path = '/projects/{projectId}/domains/{domainId}'.replace(new RegExp('{projectId}', 'g'), projectId).replace(new RegExp('{domainId}', 'g'), domainId);
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Delete Domain
+             *
+             *
+             * @param {string} projectId
+             * @param {string} domainId
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            deleteDomain: function(projectId, domainId) {
+                if(projectId === undefined) {
+                    throw new Error('Missing required parameter: "projectId"');
+                }
+                
+                if(domainId === undefined) {
+                    throw new Error('Missing required parameter: "domainId"');
+                }
+                
+                let path = '/projects/{projectId}/domains/{domainId}'.replace(new RegExp('{projectId}', 'g'), projectId).replace(new RegExp('{domainId}', 'g'), domainId);
+
+                let payload = {};
+
+                return http
+                    .delete(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Update Domain Verification Status
+             *
+             *
+             * @param {string} projectId
+             * @param {string} domainId
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            updateDomainVerification: function(projectId, domainId) {
+                if(projectId === undefined) {
+                    throw new Error('Missing required parameter: "projectId"');
+                }
+                
+                if(domainId === undefined) {
+                    throw new Error('Missing required parameter: "domainId"');
+                }
+                
+                let path = '/projects/{projectId}/domains/{domainId}/verification'.replace(new RegExp('{projectId}', 'g'), projectId).replace(new RegExp('{domainId}', 'g'), domainId);
+
+                let payload = {};
+
+                return http
+                    .patch(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
              * List Keys
              *
              *
@@ -2182,7 +2269,7 @@
             },
 
             /**
-             * Update Project OAuth
+             * Update Project OAuth2
              *
              *
              * @param {string} projectId
@@ -2192,7 +2279,7 @@
              * @throws {Error}
              * @return {Promise}             
              */
-            updateOAuth: function(projectId, provider, appId = '', secret = '') {
+            updateOAuth2: function(projectId, provider, appId = '', secret = '') {
                 if(projectId === undefined) {
                     throw new Error('Missing required parameter: "projectId"');
                 }
@@ -2201,7 +2288,7 @@
                     throw new Error('Missing required parameter: "provider"');
                 }
                 
-                let path = '/projects/{projectId}/oauth'.replace(new RegExp('{projectId}', 'g'), projectId);
+                let path = '/projects/{projectId}/oauth2'.replace(new RegExp('{projectId}', 'g'), projectId);
 
                 let payload = {};
 
@@ -3117,7 +3204,7 @@
              *
              * @param {string} fileId
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
             getFileDownload: function(fileId) {
                 if(fileId === undefined) {
@@ -3128,10 +3215,13 @@
 
                 let payload = {};
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+                let query = Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&');
+
+                return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -3149,7 +3239,7 @@
              * @param {string} background
              * @param {string} output
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
             getFilePreview: function(fileId, width = 0, height = 0, quality = 100, background = '', output = '') {
                 if(fileId === undefined) {
@@ -3180,10 +3270,13 @@
                     payload['output'] = output;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+                let query = Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&');
+
+                return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -3195,7 +3288,7 @@
              * @param {string} fileId
              * @param {string} as
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
             getFileView: function(fileId, as = '') {
                 if(fileId === undefined) {
@@ -3210,10 +3303,13 @@
                     payload['as'] = as;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+                let query = Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&');
+
+                return config.endpoint + path + ((query) ? '?' + query : '');
             }
         };
 
@@ -3408,14 +3504,14 @@
             /**
              * Create Team Membership
              *
-             * Use this endpoint to invite a new member to your team. An email with a link
-             * to join the team will be sent to the new member email address. If member
-             * doesn't exists in the project it will be automatically created.
+             * Use this endpoint to invite a new member to join your team. An email with a
+             * link to join the team will be sent to the new member email address if the
+             * member doesn't exist in the project it will be created automatically.
              * 
-             * Use the 'url' parameter to redirect the user from the invitation email back
+             * Use the 'URL' parameter to redirect the user from the invitation email back
              * to your app. When the user is redirected, use the [Update Team Membership
-             * Status](/docs/teams#updateTeamMembershipStatus) endpoint to finally join
-             * the user to the team.
+             * Status](/docs/teams#updateMembershipStatus) endpoint to allow the user to
+             * accept the invitation to the team.
              * 
              * Please note that in order to avoid a [Redirect
              * Attacks](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)
@@ -3507,21 +3603,9 @@
             /**
              * Update Team Membership Status
              *
-             * Use this endpoint to let user accept an invitation to join a team after he
-             * is being redirect back to your app from the invitation email. Use the
-             * success and failure URL's to redirect users back to your application after
-             * the request completes.
-             * 
-             * Please note that in order to avoid a [Redirect
-             * Attacks](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)
-             * the only valid redirect URL's are the once from domains you have set when
-             * added your platforms in the console interface.
-             * 
-             * When not using the success or failure redirect arguments this endpoint will
-             * result with a 200 status code on success and with 401 status error on
-             * failure. This behavior was applied to help the web clients deal with
-             * browsers who don't allow to set 3rd party HTTP cookies needed for saving
-             * the account session key.
+             * Use this endpoint to allow a user to accept an invitation to join a team
+             * after he is being redirected back to your app from the invitation email he
+             * was sent.
              *
              * @param {string} teamId
              * @param {string} inviteId
@@ -3729,7 +3813,7 @@
              * settings you wish to update.
              *
              * @param {string} userId
-             * @param {string} prefs
+             * @param {object} prefs
              * @throws {Error}
              * @return {Promise}             
              */
