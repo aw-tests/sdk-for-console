@@ -139,7 +139,7 @@
                 globalParams.push({key: key, value: value});
             };
 
-            addGlobalHeader('x-sdk-version', 'appwrite:javascript:1.0.0');
+            addGlobalHeader('x-sdk-version', 'appwrite:web:1.0.0');
             addGlobalHeader('content-type', '');
 
             /**
@@ -169,6 +169,10 @@
 
                 for (i = 0; i < globalParams.length; i++) { // Add global params to URL
                     path = addParam(path, globalParams[i].key, globalParams[i].value);
+                }
+
+                if(window.localStorage && window.localStorage.getItem('cookieFallback')) {
+                    headers['X-Fallback-Cookies'] = window.localStorage.getItem('cookieFallback');
                 }
 
                 for (let key in globalHeaders) { // Add Global Headers
@@ -222,21 +226,27 @@
                     }
 
                     request.onload = function () {
+                        let data = request.response;
+                        let contentType = this.getResponseHeader('content-type') || '';
+                        contentType = contentType.substring(0, contentType.indexOf(';'));
+
+                        switch (contentType) {
+                            case 'application/json':
+                                data = JSON.parse(data);
+                                break;
+                        }
+
+                        let cookieFallback = this.getResponseHeader('X-Fallback-Cookies') || '';
+                        
+                        if(window.localStorage && cookieFallback) {
+                            window.console.warn('Appwrite is using localStorage for session management. Increase your security by adding a custom domain as your API endpoint.');
+                            window.localStorage.setItem('cookieFallback', cookieFallback);
+                        }
+
                         if (4 === request.readyState && 399 >= request.status) {
-                            let data = request.response;
-                            let contentType = this.getResponseHeader('content-type') || '';
-                            contentType = contentType.substring(0, contentType.indexOf(';'));
-
-                            switch (contentType) {
-                                case 'application/json':
-                                    data = JSON.parse(data);
-                                    break;
-                            }
-
                             resolve(data);
-
                         } else {
-                            reject(new Error(request.statusText));
+                            reject(data);
                         }
                     };
 
@@ -275,28 +285,6 @@
             }
         }(window.document);
 
-        let iframe = function(method, url, params) {
-            let form = document.createElement('form');
-
-            form.setAttribute('method', method);
-            form.setAttribute('action', config.endpoint + url);
-
-            for(let key in params) {
-                if(params.hasOwnProperty(key)) {
-                    let hiddenField = document.createElement("input");
-                    hiddenField.setAttribute("type", "hidden");
-                    hiddenField.setAttribute("name", key);
-                    hiddenField.setAttribute("value", params[key]);
-
-                    form.appendChild(hiddenField);
-                }
-            }
-
-            document.body.appendChild(form);
-
-            return form.submit();
-        };
-
         let account = {
 
             /**
@@ -323,10 +311,10 @@
              *
              * Use this endpoint to allow a new user to register a new account in your
              * project. After the user registration completes successfully, you can use
-             * the [/account/verfication](/docs/account#createVerification) route to start
-             * verifying the user email address. To allow your new user to login to his
-             * new account, you need to create a new [account
-             * session](/docs/account#createSession).
+             * the [/account/verfication](/docs/client/account#createVerification) route
+             * to start verifying the user email address. To allow your new user to login
+             * to his new account, you need to create a new [account
+             * session](/docs/client/account#createSession).
              *
              * @param {string} email
              * @param {string} password
@@ -505,7 +493,7 @@
                 }
 
                 if(oldPassword) {
-                    payload['old-password'] = oldPassword;
+                    payload['oldPassword'] = oldPassword;
                 }
 
                 return http
@@ -569,7 +557,7 @@
              * When the user clicks the confirmation link he is redirected back to your
              * app password reset URL with the secret key and email address values
              * attached to the URL query string. Use the query string params to submit a
-             * request to the [PUT /account/recovery](/docs/account#updateRecovery)
+             * request to the [PUT /account/recovery](/docs/client/account#updateRecovery)
              * endpoint to complete the process.
              *
              * @param {string} email
@@ -610,7 +598,7 @@
              * Use this endpoint to complete the user account password reset. Both the
              * **userId** and **secret** arguments will be passed as query parameters to
              * the redirect URL you have provided when sending your request to the [POST
-             * /account/recovery](/docs/account#createRecovery) endpoint.
+             * /account/recovery](/docs/client/account#createRecovery) endpoint.
              * 
              * Please note that in order to avoid a [Redirect
              * Attack](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)
@@ -619,12 +607,12 @@
              *
              * @param {string} userId
              * @param {string} secret
-             * @param {string} passwordA
-             * @param {string} passwordB
+             * @param {string} password
+             * @param {string} passwordAgain
              * @throws {Error}
              * @return {Promise}             
              */
-            updateRecovery: function(userId, secret, passwordA, passwordB) {
+            updateRecovery: function(userId, secret, password, passwordAgain) {
                 if(userId === undefined) {
                     throw new Error('Missing required parameter: "userId"');
                 }
@@ -633,12 +621,12 @@
                     throw new Error('Missing required parameter: "secret"');
                 }
                 
-                if(passwordA === undefined) {
-                    throw new Error('Missing required parameter: "passwordA"');
+                if(password === undefined) {
+                    throw new Error('Missing required parameter: "password"');
                 }
                 
-                if(passwordB === undefined) {
-                    throw new Error('Missing required parameter: "passwordB"');
+                if(passwordAgain === undefined) {
+                    throw new Error('Missing required parameter: "passwordAgain"');
                 }
                 
                 let path = '/account/recovery';
@@ -653,12 +641,12 @@
                     payload['secret'] = secret;
                 }
 
-                if(passwordA) {
-                    payload['password-a'] = passwordA;
+                if(password) {
+                    payload['password'] = password;
                 }
 
-                if(passwordB) {
-                    payload['password-b'] = passwordB;
+                if(passwordAgain) {
+                    payload['passwordAgain'] = passwordAgain;
                 }
 
                 return http
@@ -756,20 +744,13 @@
              * @param {string} provider
              * @param {string} success
              * @param {string} failure
+             * @param {string[]} scopes
              * @throws {Error}
-             * @return {string}             
+             * @return {Promise}             
              */
-            createOAuth2Session: function(provider, success, failure) {
+            createOAuth2Session: function(provider, success = '/auth/oauth2/success', failure = '/auth/oauth2/failure', scopes = []) {
                 if(provider === undefined) {
                     throw new Error('Missing required parameter: "provider"');
-                }
-                
-                if(success === undefined) {
-                    throw new Error('Missing required parameter: "success"');
-                }
-                
-                if(failure === undefined) {
-                    throw new Error('Missing required parameter: "failure"');
                 }
                 
                 let path = '/account/sessions/oauth2/{provider}'.replace(new RegExp('{provider}', 'g'), provider);
@@ -784,13 +765,32 @@
                     payload['failure'] = failure;
                 }
 
+                if(scopes) {
+                    payload['scopes'] = scopes;
+                }
+
                 payload['project'] = config.project;
 
                 payload['key'] = config.key;
 
-                let query = Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&');
 
-                return config.endpoint + path + ((query) ? '?' + query : '');
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
+                window.location = config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -825,16 +825,17 @@
              * Use this endpoint to send a verification message to your user email address
              * to confirm they are the valid owners of that address. Both the **userId**
              * and **secret** arguments will be passed as query parameters to the URL you
-             * have provider to be attached to the verification email. The provided URL
-             * should redirect the user back for your app and allow you to complete the
+             * have provided to be attached to the verification email. The provided URL
+             * should redirect the user back to your app and allow you to complete the
              * verification process by verifying both the **userId** and **secret**
              * parameters. Learn more about how to [complete the verification
-             * process](/docs/account#updateAccountVerification). 
+             * process](/docs/client/account#updateAccountVerification). 
              * 
              * Please note that in order to avoid a [Redirect
-             * Attack](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)
+             * Attack](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md),
              * the only valid redirect URLs are the ones from domains you have set when
              * adding your platforms in the console interface.
+             * 
              *
              * @param {string} url
              * @throws {Error}
@@ -915,7 +916,7 @@
              * @param {number} height
              * @param {number} quality
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
             getBrowser: function(code, width = 100, height = 100, quality = 100) {
                 if(code === undefined) {
@@ -938,10 +939,28 @@
                     payload['quality'] = quality;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
+                return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -957,7 +976,7 @@
              * @param {number} height
              * @param {number} quality
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
             getCreditCard: function(code, width = 100, height = 100, quality = 100) {
                 if(code === undefined) {
@@ -980,10 +999,28 @@
                     payload['quality'] = quality;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
+                return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -994,7 +1031,7 @@
              *
              * @param {string} url
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
             getFavicon: function(url) {
                 if(url === undefined) {
@@ -1009,10 +1046,28 @@
                     payload['url'] = url;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
+                return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -1027,7 +1082,7 @@
              * @param {number} height
              * @param {number} quality
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
             getFlag: function(code, width = 100, height = 100, quality = 100) {
                 if(code === undefined) {
@@ -1050,10 +1105,28 @@
                     payload['quality'] = quality;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
+                return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -1068,7 +1141,7 @@
              * @param {number} width
              * @param {number} height
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
             getImage: function(url, width = 400, height = 400) {
                 if(url === undefined) {
@@ -1091,10 +1164,99 @@
                     payload['height'] = height;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
+                return config.endpoint + path + ((query) ? '?' + query : '');
+            },
+
+            /**
+             * Get User Initials
+             *
+             * Use this endpoint to show your user initials avatar icon on your website or
+             * app. By default, this route will try to print your logged-in user name or
+             * email initials. You can also overwrite the user name if you pass the 'name'
+             * parameter. If no name is given and no user is logged, an empty avatar will
+             * be returned.
+             * 
+             * You can use the color and background params to change the avatar colors. By
+             * default, a random theme will be selected. The random theme will persist for
+             * the user's initials when reloading the same theme will always return for
+             * the same initials.
+             *
+             * @param {string} name
+             * @param {number} width
+             * @param {number} height
+             * @param {string} color
+             * @param {string} background
+             * @throws {Error}
+             * @return {string}             
+             */
+            getInitials: function(name = '', width = 500, height = 500, color = '', background = '') {
+                let path = '/avatars/initials';
+
+                let payload = {};
+
+                if(name) {
+                    payload['name'] = name;
+                }
+
+                if(width) {
+                    payload['width'] = width;
+                }
+
+                if(height) {
+                    payload['height'] = height;
+                }
+
+                if(color) {
+                    payload['color'] = color;
+                }
+
+                if(background) {
+                    payload['background'] = background;
+                }
+
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
+                return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
             /**
@@ -1106,11 +1268,11 @@
              * @param {string} text
              * @param {number} size
              * @param {number} margin
-             * @param {number} download
+             * @param {boolean} download
              * @throws {Error}
-             * @return {Promise}             
+             * @return {string}             
              */
-            getQR: function(text, size = 400, margin = 1, download = 0) {
+            getQR: function(text, size = 400, margin = 1, download = false) {
                 if(text === undefined) {
                     throw new Error('Missing required parameter: "text"');
                 }
@@ -1135,10 +1297,28 @@
                     payload['download'] = download;
                 }
 
-                return http
-                    .get(path, {
-                        'content-type': 'application/json',
-                    }, payload);
+                payload['project'] = config.project;
+
+                payload['key'] = config.key;
+
+
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
+                return config.endpoint + path + ((query) ? '?' + query : '');
             }
         };
 
@@ -1192,9 +1372,9 @@
              * Create a new Collection.
              *
              * @param {string} name
-             * @param {array} read
-             * @param {array} write
-             * @param {array} rules
+             * @param {string[]} read
+             * @param {string[]} write
+             * @param {string[]} rules
              * @throws {Error}
              * @return {Promise}             
              */
@@ -1273,9 +1453,9 @@
              *
              * @param {string} collectionId
              * @param {string} name
-             * @param {array} read
-             * @param {array} write
-             * @param {array} rules
+             * @param {string[]} read
+             * @param {string[]} write
+             * @param {string[]} rules
              * @throws {Error}
              * @return {Promise}             
              */
@@ -1356,19 +1536,17 @@
              * modes](/docs/admin).
              *
              * @param {string} collectionId
-             * @param {array} filters
+             * @param {string[]} filters
              * @param {number} offset
              * @param {number} limit
              * @param {string} orderField
              * @param {string} orderType
              * @param {string} orderCast
              * @param {string} search
-             * @param {number} first
-             * @param {number} last
              * @throws {Error}
              * @return {Promise}             
              */
-            listDocuments: function(collectionId, filters = [], offset = 0, limit = 50, orderField = '$id', orderType = 'ASC', orderCast = 'string', search = '', first = 0, last = 0) {
+            listDocuments: function(collectionId, filters = [], offset = 0, limit = 50, orderField = '$id', orderType = 'ASC', orderCast = 'string', search = '') {
                 if(collectionId === undefined) {
                     throw new Error('Missing required parameter: "collectionId"');
                 }
@@ -1390,27 +1568,19 @@
                 }
 
                 if(orderField) {
-                    payload['order-field'] = orderField;
+                    payload['orderField'] = orderField;
                 }
 
                 if(orderType) {
-                    payload['order-type'] = orderType;
+                    payload['orderType'] = orderType;
                 }
 
                 if(orderCast) {
-                    payload['order-cast'] = orderCast;
+                    payload['orderCast'] = orderCast;
                 }
 
                 if(search) {
                     payload['search'] = search;
-                }
-
-                if(first) {
-                    payload['first'] = first;
-                }
-
-                if(last) {
-                    payload['last'] = last;
                 }
 
                 return http
@@ -1422,12 +1592,15 @@
             /**
              * Create Document
              *
-             * Create a new Document.
+             * Create a new Document. Before using this route, you should create a new
+             * collection resource using either a [server
+             * integration](/docs/server/database?sdk=nodejs#createCollection) API or
+             * directly from your database console.
              *
              * @param {string} collectionId
              * @param {object} data
-             * @param {array} read
-             * @param {array} write
+             * @param {string[]} read
+             * @param {string[]} write
              * @param {string} parentDocument
              * @param {string} parentProperty
              * @param {string} parentPropertyType
@@ -1522,8 +1695,8 @@
              * @param {string} collectionId
              * @param {string} documentId
              * @param {object} data
-             * @param {array} read
-             * @param {array} write
+             * @param {string[]} read
+             * @param {string[]} write
              * @throws {Error}
              * @return {Promise}             
              */
@@ -1602,6 +1775,249 @@
             }
         };
 
+        let health = {
+
+            /**
+             * Get HTTP
+             *
+             * Check the Appwrite HTTP server is up and responsive.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            get: function() {
+                let path = '/health';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Anti virus
+             *
+             * Check the Appwrite Anti Virus server is up and connection is successful.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getAntiVirus: function() {
+                let path = '/health/anti-virus';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Cache
+             *
+             * Check the Appwrite in-memory cache server is up and connection is
+             * successful.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getCache: function() {
+                let path = '/health/cache';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get DB
+             *
+             * Check the Appwrite database server is up and connection is successful.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getDB: function() {
+                let path = '/health/db';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Certificate Queue
+             *
+             * Get the number of certificates that are waiting to be issued against
+             * [Letsencrypt](https://letsencrypt.org/) in the Appwrite internal queue
+             * server.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getQueueCertificates: function() {
+                let path = '/health/queue/certificates';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Functions Queue
+             *
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getQueueFunctions: function() {
+                let path = '/health/queue/functions';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Logs Queue
+             *
+             * Get the number of logs that are waiting to be processed in the Appwrite
+             * internal queue server.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getQueueLogs: function() {
+                let path = '/health/queue/logs';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Tasks Queue
+             *
+             * Get the number of tasks that are waiting to be processed in the Appwrite
+             * internal queue server.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getQueueTasks: function() {
+                let path = '/health/queue/tasks';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Usage Queue
+             *
+             * Get the number of usage stats that are waiting to be processed in the
+             * Appwrite internal queue server.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getQueueUsage: function() {
+                let path = '/health/queue/usage';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Webhooks Queue
+             *
+             * Get the number of webhooks that are waiting to be processed in the Appwrite
+             * internal queue server.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getQueueWebhooks: function() {
+                let path = '/health/queue/webhooks';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Local Storage
+             *
+             * Check the Appwrite local storage device is up and connection is successful.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getStorageLocal: function() {
+                let path = '/health/storage/local';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Get Time
+             *
+             * Check the Appwrite server time is synced with Google remote NTP server. We
+             * use this technology to smoothly handle leap seconds with no disruptive
+             * events. The [Network Time
+             * Protocol](https://en.wikipedia.org/wiki/Network_Time_Protocol) (NTP) is
+             * used by hundreds of millions of computers and devices to synchronize their
+             * clocks over the Internet. If your computer sets its own clock, it likely
+             * uses NTP.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getTime: function() {
+                let path = '/health/time';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            }
+        };
+
         let locale = {
 
             /**
@@ -1629,7 +2045,7 @@
             },
 
             /**
-             * List Countries
+             * List Continents
              *
              * List of all continents. You can use the locale header to get the data in a
              * supported language.
@@ -1711,9 +2127,9 @@
             /**
              * List Currencies
              *
-             * List of all currencies, including currency symol, name, plural, and decimal
-             * digits for all major and minor currencies. You can use the locale header to
-             * get the data in a supported language.
+             * List of all currencies, including currency symbol, name, plural, and
+             * decimal digits for all major and minor currencies. You can use the locale
+             * header to get the data in a supported language.
              *
              * @throws {Error}
              * @return {Promise}             
@@ -1726,6 +2142,629 @@
                 return http
                     .get(path, {
                         'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * List Languages
+             *
+             * List of all languages classified by ISO 639-1 including 2-letter code, name
+             * in English, and name in the respective language.
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getLanguages: function() {
+                let path = '/locale/languages';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            }
+        };
+
+        let bar = {
+
+            /**
+             * Mock a get request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            get: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/bar';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a post request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            post: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/bar';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .post(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a put request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            put: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/bar';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .put(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a patch request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            patch: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/bar';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .patch(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a delete request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            delete: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/bar';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .delete(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            }
+        };
+
+        let foo = {
+
+            /**
+             * Mock a get request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            get: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/foo';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a post request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            post: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/foo';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .post(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a put request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            put: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/foo';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .put(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a patch request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            patch: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/foo';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .patch(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a delete request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            delete: function(x, y, z) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                let path = '/mock/tests/foo';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                return http
+                    .delete(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            }
+        };
+
+        let general = {
+
+            /**
+             * Mock a post request for SDK tests
+             *
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            empty: function() {
+                let path = '/mock/tests/general/empty';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a cookie request for SDK tests
+             *
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            getCookie: function() {
+                let path = '/mock/tests/general/get-cookie';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a post request for SDK tests
+             *
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            redirect: function() {
+                let path = '/mock/tests/general/redirect';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a post request for SDK tests
+             *
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            redirected: function() {
+                let path = '/mock/tests/general/redirected';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a cookie request for SDK tests
+             *
+             *
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            setCookie: function() {
+                let path = '/mock/tests/general/set-cookie';
+
+                let payload = {};
+
+                return http
+                    .get(path, {
+                        'content-type': 'application/json',
+                    }, payload);
+            },
+
+            /**
+             * Mock a post request for SDK tests
+             *
+             *
+             * @param {string} x
+             * @param {number} y
+             * @param {string[]} z
+             * @param {File} file
+             * @throws {Error}
+             * @return {Promise}             
+             */
+            upload: function(x, y, z, file) {
+                if(x === undefined) {
+                    throw new Error('Missing required parameter: "x"');
+                }
+                
+                if(y === undefined) {
+                    throw new Error('Missing required parameter: "y"');
+                }
+                
+                if(z === undefined) {
+                    throw new Error('Missing required parameter: "z"');
+                }
+                
+                if(file === undefined) {
+                    throw new Error('Missing required parameter: "file"');
+                }
+                
+                let path = '/mock/tests/general/upload';
+
+                let payload = {};
+
+                if(x) {
+                    payload['x'] = x;
+                }
+
+                if(y) {
+                    payload['y'] = y;
+                }
+
+                if(z) {
+                    payload['z'] = z;
+                }
+
+                if(file) {
+                    payload['file'] = file;
+                }
+
+                return http
+                    .post(path, {
+                        'content-type': 'multipart/form-data',
                     }, payload);
             }
         };
@@ -2131,7 +3170,7 @@
              *
              * @param {string} projectId
              * @param {string} name
-             * @param {array} scopes
+             * @param {string[]} scopes
              * @throws {Error}
              * @return {Promise}             
              */
@@ -2201,7 +3240,7 @@
              * @param {string} projectId
              * @param {string} keyId
              * @param {string} name
-             * @param {array} scopes
+             * @param {string[]} scopes
              * @throws {Error}
              * @return {Promise}             
              */
@@ -2342,11 +3381,11 @@
              * @param {string} name
              * @param {string} key
              * @param {string} store
-             * @param {string} url
+             * @param {string} hostname
              * @throws {Error}
              * @return {Promise}             
              */
-            createPlatform: function(projectId, type, name, key = '', store = '', url = '') {
+            createPlatform: function(projectId, type, name, key = '', store = '', hostname = '') {
                 if(projectId === undefined) {
                     throw new Error('Missing required parameter: "projectId"');
                 }
@@ -2379,8 +3418,8 @@
                     payload['store'] = store;
                 }
 
-                if(url) {
-                    payload['url'] = url;
+                if(hostname) {
+                    payload['hostname'] = hostname;
                 }
 
                 return http
@@ -2426,11 +3465,11 @@
              * @param {string} name
              * @param {string} key
              * @param {string} store
-             * @param {string} url
+             * @param {string} hostname
              * @throws {Error}
              * @return {Promise}             
              */
-            updatePlatform: function(projectId, platformId, name, key = '', store = '', url = '') {
+            updatePlatform: function(projectId, platformId, name, key = '', store = '', hostname = '') {
                 if(projectId === undefined) {
                     throw new Error('Missing required parameter: "projectId"');
                 }
@@ -2459,8 +3498,8 @@
                     payload['store'] = store;
                 }
 
-                if(url) {
-                    payload['url'] = url;
+                if(hostname) {
+                    payload['hostname'] = hostname;
                 }
 
                 return http
@@ -2528,10 +3567,10 @@
              * @param {string} name
              * @param {string} status
              * @param {string} schedule
-             * @param {number} security
+             * @param {boolean} security
              * @param {string} httpMethod
              * @param {string} httpUrl
-             * @param {array} httpHeaders
+             * @param {string[]} httpHeaders
              * @param {string} httpUser
              * @param {string} httpPass
              * @throws {Error}
@@ -2649,10 +3688,10 @@
              * @param {string} name
              * @param {string} status
              * @param {string} schedule
-             * @param {number} security
+             * @param {boolean} security
              * @param {string} httpMethod
              * @param {string} httpUrl
-             * @param {array} httpHeaders
+             * @param {string[]} httpHeaders
              * @param {string} httpUser
              * @param {string} httpPass
              * @throws {Error}
@@ -2770,10 +3809,11 @@
              *
              *
              * @param {string} projectId
+             * @param {string} range
              * @throws {Error}
              * @return {Promise}             
              */
-            getUsage: function(projectId) {
+            getUsage: function(projectId, range = 'last30') {
                 if(projectId === undefined) {
                     throw new Error('Missing required parameter: "projectId"');
                 }
@@ -2781,6 +3821,10 @@
                 let path = '/projects/{projectId}/usage'.replace(new RegExp('{projectId}', 'g'), projectId);
 
                 let payload = {};
+
+                if(range) {
+                    payload['range'] = range;
+                }
 
                 return http
                     .get(path, {
@@ -2817,9 +3861,9 @@
              *
              * @param {string} projectId
              * @param {string} name
-             * @param {array} events
+             * @param {string[]} events
              * @param {string} url
-             * @param {number} security
+             * @param {boolean} security
              * @param {string} httpUser
              * @param {string} httpPass
              * @throws {Error}
@@ -2915,9 +3959,9 @@
              * @param {string} projectId
              * @param {string} webhookId
              * @param {string} name
-             * @param {array} events
+             * @param {string[]} events
              * @param {string} url
-             * @param {number} security
+             * @param {boolean} security
              * @param {string} httpUser
              * @param {string} httpPass
              * @throws {Error}
@@ -3062,8 +4106,8 @@
              * read and write arguments.
              *
              * @param {File} file
-             * @param {array} read
-             * @param {array} write
+             * @param {string[]} read
+             * @param {string[]} write
              * @throws {Error}
              * @return {Promise}             
              */
@@ -3134,8 +4178,8 @@
              * to update this resource.
              *
              * @param {string} fileId
-             * @param {array} read
-             * @param {array} write
+             * @param {string[]} read
+             * @param {string[]} write
              * @throws {Error}
              * @return {Promise}             
              */
@@ -3219,8 +4263,23 @@
 
                 payload['key'] = config.key;
 
-                let query = Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&');
 
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
                 return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
@@ -3274,8 +4333,23 @@
 
                 payload['key'] = config.key;
 
-                let query = Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&');
 
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
                 return config.endpoint + path + ((query) ? '?' + query : '');
             },
 
@@ -3307,8 +4381,23 @@
 
                 payload['key'] = config.key;
 
-                let query = Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&');
 
+                let query = [];
+
+                for (let p in payload) {
+                    if(Array.isArray(payload[p])) {
+                        for (let index = 0; index < payload[p].length; index++) {
+                            let param = payload[p][index];
+                            query.push(encodeURIComponent(p + '[]') + "=" + encodeURIComponent(param));
+                        }
+                    }
+                    else {
+                        query.push(encodeURIComponent(p) + "=" + encodeURIComponent(payload[p]));
+                    }
+                }
+
+                query =  query.join("&");
+                
                 return config.endpoint + path + ((query) ? '?' + query : '');
             }
         };
@@ -3365,7 +4454,7 @@
              * project.
              *
              * @param {string} name
-             * @param {array} roles
+             * @param {string[]} roles
              * @throws {Error}
              * @return {Promise}             
              */
@@ -3483,10 +4572,14 @@
              * for this list of resources.
              *
              * @param {string} teamId
+             * @param {string} search
+             * @param {number} limit
+             * @param {number} offset
+             * @param {string} orderType
              * @throws {Error}
              * @return {Promise}             
              */
-            getMemberships: function(teamId) {
+            getMemberships: function(teamId, search = '', limit = 25, offset = 0, orderType = 'ASC') {
                 if(teamId === undefined) {
                     throw new Error('Missing required parameter: "teamId"');
                 }
@@ -3494,6 +4587,22 @@
                 let path = '/teams/{teamId}/memberships'.replace(new RegExp('{teamId}', 'g'), teamId);
 
                 let payload = {};
+
+                if(search) {
+                    payload['search'] = search;
+                }
+
+                if(limit) {
+                    payload['limit'] = limit;
+                }
+
+                if(offset) {
+                    payload['offset'] = offset;
+                }
+
+                if(orderType) {
+                    payload['orderType'] = orderType;
+                }
 
                 return http
                     .get(path, {
@@ -3510,8 +4619,8 @@
              * 
              * Use the 'URL' parameter to redirect the user from the invitation email back
              * to your app. When the user is redirected, use the [Update Team Membership
-             * Status](/docs/teams#updateMembershipStatus) endpoint to allow the user to
-             * accept the invitation to the team.
+             * Status](/docs/client/teams#updateMembershipStatus) endpoint to allow the
+             * user to accept the invitation to the team.
              * 
              * Please note that in order to avoid a [Redirect
              * Attacks](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)
@@ -3520,7 +4629,7 @@
              *
              * @param {string} teamId
              * @param {string} email
-             * @param {array} roles
+             * @param {string[]} roles
              * @param {string} url
              * @param {string} name
              * @throws {Error}
@@ -3907,13 +5016,9 @@
                     throw new Error('Missing required parameter: "sessionId"');
                 }
                 
-                let path = '/users/{userId}/sessions/:session'.replace(new RegExp('{userId}', 'g'), userId);
+                let path = '/users/{userId}/sessions/{sessionId}'.replace(new RegExp('{userId}', 'g'), userId).replace(new RegExp('{sessionId}', 'g'), sessionId);
 
                 let payload = {};
-
-                if(sessionId) {
-                    payload['sessionId'] = sessionId;
-                }
 
                 return http
                     .delete(path, {
@@ -3964,7 +5069,11 @@
             account: account,
             avatars: avatars,
             database: database,
+            health: health,
             locale: locale,
+            bar: bar,
+            foo: foo,
+            general: general,
             projects: projects,
             storage: storage,
             teams: teams,
