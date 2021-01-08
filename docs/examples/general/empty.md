@@ -6,7 +6,7 @@ sdk
     .setKey('919c2d18fb5d4...a2ae413da83346ad2') // Your secret API key
 ;
 
-let promise = sdk.functions.getUsage('[FUNCTION_ID]');
+let promise = sdk.general.empty();
 
 promise.then(function (response) {
     console.log(response); // Success
