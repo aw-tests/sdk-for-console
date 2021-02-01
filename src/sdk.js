@@ -2218,11 +2218,11 @@
              *
              * @param {string} functionId
              * @param {string} command
-             * @param {File} file
+             * @param {File} code
              * @throws {Error}
              * @return {Promise}             
              */
-            createTag: function(functionId, command, file) {
+            createTag: function(functionId, command, code) {
                 if(functionId === undefined) {
                     throw new Error('Missing required parameter: "functionId"');
                 }
@@ -2231,8 +2231,8 @@
                     throw new Error('Missing required parameter: "command"');
                 }
                 
-                if(file === undefined) {
-                    throw new Error('Missing required parameter: "file"');
+                if(code === undefined) {
+                    throw new Error('Missing required parameter: "code"');
                 }
                 
                 let path = '/functions/{functionId}/tags'.replace(new RegExp('{functionId}', 'g'), functionId);
@@ -2243,8 +2243,8 @@
                     payload['command'] = command;
                 }
 
-                if(file) {
-                    payload['file'] = file;
+                if(code) {
+                    payload['code'] = code;
                 }
 
                 return http
