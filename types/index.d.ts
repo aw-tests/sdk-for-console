@@ -57,11 +57,9 @@ declare class Appwrite {
 	account:Appwrite.Account;
 	avatars:Appwrite.Avatars;
 	database:Appwrite.Database;
+	functions:Appwrite.Functions;
 	health:Appwrite.Health;
 	locale:Appwrite.Locale;
-	bar:Appwrite.Bar;
-	foo:Appwrite.Foo;
-	general:Appwrite.General;
 	projects:Appwrite.Projects;
 	storage:Appwrite.Storage;
 	teams:Appwrite.Teams;
@@ -89,8 +87,8 @@ declare namespace Appwrite {
          * Use this endpoint to allow a new user to register a new account in your
          * project. After the user registration completes successfully, you can use
          * the [/account/verfication](/docs/client/account#createVerification) route
-         * to start verifying the user email address. To allow your new user to login
-         * to his new account, you need to create a new [account
+         * to start verifying the user email address. To allow the new user to login
+         * to their new account, you need to create a new [account
          * session](/docs/client/account#createSession).
 	     *
          * @param {string} email
@@ -129,6 +127,19 @@ declare namespace Appwrite {
          * @return {Promise}         
          */
 	    updateEmail(email: string, password: string): Promise<object>;
+
+        /**
+         * Create Account JWT
+         *
+         * Use this endpoint to create a JSON Web Token. You can use the resulting JWT
+         * to authenticate on behalf of the current user when working with the
+         * Appwrite server-side API and SDKs. The JWT secret is valid for 15 minutes
+         * from its creation and will be invalid if the user will logout.
+	     *
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    createJWT(): Promise<object>;
 
         /**
          * Get Account Logs
@@ -240,7 +251,7 @@ declare namespace Appwrite {
         /**
          * Create Account Session
          *
-         * Allow the user to login into his account by providing a valid email and
+         * Allow the user to login into their account by providing a valid email and
          * password combination. This route will create a new session for the user.
 	     *
          * @param {string} email
@@ -264,7 +275,7 @@ declare namespace Appwrite {
         /**
          * Create Account Session with OAuth2
          *
-         * Allow the user to login to his account using the OAuth2 provider of his
+         * Allow the user to login to their account using the OAuth2 provider of their
          * choice. Each OAuth2 provider should be enabled from the Appwrite console
          * first. Use the success and failure arguments to provide a redirect URL's
          * back to your app when login is completed.
@@ -281,9 +292,9 @@ declare namespace Appwrite {
         /**
          * Delete Account Session
          *
-         * Use this endpoint to log out the currently logged in user from all his
-         * account sessions across all his different devices. When using the option id
-         * argument, only the session unique ID provider will be deleted.
+         * Use this endpoint to log out the currently logged in user from all their
+         * account sessions across all of their different devices. When using the
+         * option id argument, only the session unique ID provider will be deleted.
 	     *
          * @param {string} sessionId
          * @throws {Error}
@@ -301,7 +312,7 @@ declare namespace Appwrite {
          * should redirect the user back to your app and allow you to complete the
          * verification process by verifying both the **userId** and **secret**
          * parameters. Learn more about how to [complete the verification
-         * process](/docs/client/account#updateAccountVerification). 
+         * process](/docs/client/account#updateVerification). 
          * 
          * Please note that in order to avoid a [Redirect
          * Attack](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md),
@@ -354,10 +365,9 @@ declare namespace Appwrite {
         /**
          * Get Credit Card Icon
          *
-         * Need to display your users with your billing method or their payment
-         * methods? The credit card endpoint will return you the icon of the credit
-         * card provider you need. Use width, height and quality arguments to change
-         * the output settings.
+         * The credit card endpoint will return you the icon of the credit card
+         * provider you need. Use width, height and quality arguments to change the
+         * output settings.
 	     *
          * @param {string} code
          * @param {number} width
@@ -371,8 +381,9 @@ declare namespace Appwrite {
         /**
          * Get Favicon
          *
-         * Use this endpoint to fetch the favorite icon (AKA favicon) of a  any remote
+         * Use this endpoint to fetch the favorite icon (AKA favicon) of any remote
          * website URL.
+         * 
 	     *
          * @param {string} url
          * @throws {Error}
@@ -460,7 +471,7 @@ declare namespace Appwrite {
          *
          * Get a list of all the user collections. You can use the query params to
          * filter your results. On admin mode, this endpoint will return a list of all
-         * of the project collections. [Learn more about different API
+         * of the project's collections. [Learn more about different API
          * modes](/docs/admin).
 	     *
          * @param {string} search
@@ -489,7 +500,7 @@ declare namespace Appwrite {
         /**
          * Get Collection
          *
-         * Get collection by its unique ID. This endpoint response returns a JSON
+         * Get a collection by its unique ID. This endpoint response returns a JSON
          * object with the collection metadata.
 	     *
          * @param {string} collectionId
@@ -501,7 +512,7 @@ declare namespace Appwrite {
         /**
          * Update Collection
          *
-         * Update collection by its unique ID.
+         * Update a collection by its unique ID.
 	     *
          * @param {string} collectionId
          * @param {string} name
@@ -530,13 +541,13 @@ declare namespace Appwrite {
          *
          * Get a list of all the user documents. You can use the query params to
          * filter your results. On admin mode, this endpoint will return a list of all
-         * of the project documents. [Learn more about different API
+         * of the project's documents. [Learn more about different API
          * modes](/docs/admin).
 	     *
          * @param {string} collectionId
          * @param {string[]} filters
-         * @param {number} offset
          * @param {number} limit
+         * @param {number} offset
          * @param {string} orderField
          * @param {string} orderType
          * @param {string} orderCast
@@ -544,7 +555,7 @@ declare namespace Appwrite {
          * @throws {Error}
          * @return {Promise}         
          */
-	    listDocuments(collectionId: string, filters?: string[], offset?: number, limit?: number, orderField?: string, orderType?: string, orderCast?: string, search?: string): Promise<object>;
+	    listDocuments(collectionId: string, filters?: string[], limit?: number, offset?: number, orderField?: string, orderType?: string, orderCast?: string, search?: string): Promise<object>;
 
         /**
          * Create Document
@@ -569,8 +580,8 @@ declare namespace Appwrite {
         /**
          * Get Document
          *
-         * Get document by its unique ID. This endpoint response returns a JSON object
-         * with the document data.
+         * Get a document by its unique ID. This endpoint response returns a JSON
+         * object with the document data.
 	     *
          * @param {string} collectionId
          * @param {string} documentId
@@ -582,6 +593,8 @@ declare namespace Appwrite {
         /**
          * Update Document
          *
+         * Update a document by its unique ID. Using the patch method you can pass
+         * only specific fields that will get updated.
 	     *
          * @param {string} collectionId
          * @param {string} documentId
@@ -596,8 +609,8 @@ declare namespace Appwrite {
         /**
          * Delete Document
          *
-         * Delete document by its unique ID. This endpoint deletes only the parent
-         * documents, his attributes and relations to other documents. Child documents
+         * Delete a document by its unique ID. This endpoint deletes only the parent
+         * documents, its attributes and relations to other documents. Child documents
          * **will not** be deleted.
 	     *
          * @param {string} collectionId
@@ -606,6 +619,214 @@ declare namespace Appwrite {
          * @return {Promise}         
          */
 	    deleteDocument(collectionId: string, documentId: string): Promise<object>;
+
+	}
+
+    export interface Functions {
+
+        /**
+         * List Functions
+         *
+         * Get a list of all the project's functions. You can use the query params to
+         * filter your results.
+	     *
+         * @param {string} search
+         * @param {number} limit
+         * @param {number} offset
+         * @param {string} orderType
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    list(search?: string, limit?: number, offset?: number, orderType?: string): Promise<object>;
+
+        /**
+         * Create Function
+         *
+         * Create a new function. You can pass a list of
+         * [permissions](/docs/permissions) to allow different project users or team
+         * with access to execute the function using the client API.
+	     *
+         * @param {string} name
+         * @param {string[]} execute
+         * @param {string} env
+         * @param {object} vars
+         * @param {string[]} events
+         * @param {string} schedule
+         * @param {number} timeout
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    create(name: string, execute: string[], env: string, vars?: object, events?: string[], schedule?: string, timeout?: number): Promise<object>;
+
+        /**
+         * Get Function
+         *
+         * Get a function by its unique ID.
+	     *
+         * @param {string} functionId
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    get(functionId: string): Promise<object>;
+
+        /**
+         * Update Function
+         *
+         * Update function by its unique ID.
+	     *
+         * @param {string} functionId
+         * @param {string} name
+         * @param {string[]} execute
+         * @param {object} vars
+         * @param {string[]} events
+         * @param {string} schedule
+         * @param {number} timeout
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    update(functionId: string, name: string, execute: string[], vars?: object, events?: string[], schedule?: string, timeout?: number): Promise<object>;
+
+        /**
+         * Delete Function
+         *
+         * Delete a function by its unique ID.
+	     *
+         * @param {string} functionId
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    delete(functionId: string): Promise<object>;
+
+        /**
+         * List Executions
+         *
+         * Get a list of all the current user function execution logs. You can use the
+         * query params to filter your results. On admin mode, this endpoint will
+         * return a list of all of the project's teams. [Learn more about different
+         * API modes](/docs/admin).
+	     *
+         * @param {string} functionId
+         * @param {string} search
+         * @param {number} limit
+         * @param {number} offset
+         * @param {string} orderType
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    listExecutions(functionId: string, search?: string, limit?: number, offset?: number, orderType?: string): Promise<object>;
+
+        /**
+         * Create Execution
+         *
+         * Trigger a function execution. The returned object will return you the
+         * current execution status. You can ping the `Get Execution` endpoint to get
+         * updates on the current execution status. Once this endpoint is called, your
+         * function execution process will start asynchronously.
+	     *
+         * @param {string} functionId
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    createExecution(functionId: string): Promise<object>;
+
+        /**
+         * Get Execution
+         *
+         * Get a function execution log by its unique ID.
+	     *
+         * @param {string} functionId
+         * @param {string} executionId
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    getExecution(functionId: string, executionId: string): Promise<object>;
+
+        /**
+         * Update Function Tag
+         *
+         * Update the function code tag ID using the unique function ID. Use this
+         * endpoint to switch the code tag that should be executed by the execution
+         * endpoint.
+	     *
+         * @param {string} functionId
+         * @param {string} tag
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    updateTag(functionId: string, tag: string): Promise<object>;
+
+        /**
+         * List Tags
+         *
+         * Get a list of all the project's code tags. You can use the query params to
+         * filter your results.
+	     *
+         * @param {string} functionId
+         * @param {string} search
+         * @param {number} limit
+         * @param {number} offset
+         * @param {string} orderType
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    listTags(functionId: string, search?: string, limit?: number, offset?: number, orderType?: string): Promise<object>;
+
+        /**
+         * Create Tag
+         *
+         * Create a new function code tag. Use this endpoint to upload a new version
+         * of your code function. To execute your newly uploaded code, you'll need to
+         * update the function's tag to use your new tag UID.
+         * 
+         * This endpoint accepts a tar.gz file compressed with your code. Make sure to
+         * include any dependencies your code has within the compressed file. You can
+         * learn more about code packaging in the [Appwrite Cloud Functions
+         * tutorial](/docs/functions).
+         * 
+         * Use the "command" param to set the entry point used to execute your code.
+	     *
+         * @param {string} functionId
+         * @param {string} command
+         * @param {File} file
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    createTag(functionId: string, command: string, file: File): Promise<object>;
+
+        /**
+         * Get Tag
+         *
+         * Get a code tag by its unique ID.
+	     *
+         * @param {string} functionId
+         * @param {string} tagId
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    getTag(functionId: string, tagId: string): Promise<object>;
+
+        /**
+         * Delete Tag
+         *
+         * Delete a code tag by its unique ID.
+	     *
+         * @param {string} functionId
+         * @param {string} tagId
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    deleteTag(functionId: string, tagId: string): Promise<object>;
+
+        /**
+         * Get Function Usage
+         *
+	     *
+         * @param {string} functionId
+         * @param {string} range
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    getUsage(functionId: string, range?: string): Promise<object>;
 
 	}
 
@@ -831,206 +1052,20 @@ declare namespace Appwrite {
 
 	}
 
-    export interface Bar {
-
-        /**
-         * Mock a get request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    get(x: string, y: number, z: string[]): Promise<object>;
-
-        /**
-         * Mock a post request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    post(x: string, y: number, z: string[]): Promise<object>;
-
-        /**
-         * Mock a put request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    put(x: string, y: number, z: string[]): Promise<object>;
-
-        /**
-         * Mock a patch request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    patch(x: string, y: number, z: string[]): Promise<object>;
-
-        /**
-         * Mock a delete request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    delete(x: string, y: number, z: string[]): Promise<object>;
-
-	}
-
-    export interface Foo {
-
-        /**
-         * Mock a get request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    get(x: string, y: number, z: string[]): Promise<object>;
-
-        /**
-         * Mock a post request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    post(x: string, y: number, z: string[]): Promise<object>;
-
-        /**
-         * Mock a put request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    put(x: string, y: number, z: string[]): Promise<object>;
-
-        /**
-         * Mock a patch request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    patch(x: string, y: number, z: string[]): Promise<object>;
-
-        /**
-         * Mock a delete request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    delete(x: string, y: number, z: string[]): Promise<object>;
-
-	}
-
-    export interface General {
-
-        /**
-         * Mock a post request for SDK tests
-         *
-	     *
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    empty(): Promise<object>;
-
-        /**
-         * Mock a cookie request for SDK tests
-         *
-	     *
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    getCookie(): Promise<object>;
-
-        /**
-         * Mock a post request for SDK tests
-         *
-	     *
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    redirect(): Promise<object>;
-
-        /**
-         * Mock a post request for SDK tests
-         *
-	     *
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    redirected(): Promise<object>;
-
-        /**
-         * Mock a cookie request for SDK tests
-         *
-	     *
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    setCookie(): Promise<object>;
-
-        /**
-         * Mock a post request for SDK tests
-         *
-	     *
-         * @param {string} x
-         * @param {number} y
-         * @param {string[]} z
-         * @param {File} file
-         * @throws {Error}
-         * @return {Promise}         
-         */
-	    upload(x: string, y: number, z: string[], file: File): Promise<object>;
-
-	}
-
     export interface Projects {
 
         /**
          * List Projects
          *
 	     *
+         * @param {string} search
+         * @param {number} limit
+         * @param {number} offset
+         * @param {string} orderType
          * @throws {Error}
          * @return {Promise}         
          */
-	    list(): Promise<object>;
+	    list(search?: string, limit?: number, offset?: number, orderType?: string): Promise<object>;
 
         /**
          * Create Project
@@ -1435,7 +1470,7 @@ declare namespace Appwrite {
          *
          * Get a list of all the user files. You can use the query params to filter
          * your results. On admin mode, this endpoint will return a list of all of the
-         * project files. [Learn more about different API modes](/docs/admin).
+         * project's files. [Learn more about different API modes](/docs/admin).
 	     *
          * @param {string} search
          * @param {number} limit
@@ -1464,7 +1499,7 @@ declare namespace Appwrite {
         /**
          * Get File
          *
-         * Get file by its unique ID. This endpoint response returns a JSON object
+         * Get a file by its unique ID. This endpoint response returns a JSON object
          * with the file metadata.
 	     *
          * @param {string} fileId
@@ -1476,8 +1511,8 @@ declare namespace Appwrite {
         /**
          * Update File
          *
-         * Update file by its unique ID. Only users with write permissions have access
-         * to update this resource.
+         * Update a file by its unique ID. Only users with write permissions have
+         * access to update this resource.
 	     *
          * @param {string} fileId
          * @param {string[]} read
@@ -1502,7 +1537,7 @@ declare namespace Appwrite {
         /**
          * Get File for Download
          *
-         * Get file content by its unique ID. The endpoint response return with a
+         * Get a file content by its unique ID. The endpoint response return with a
          * 'Content-Disposition: attachment' header that tells the browser to start
          * downloading the file to user downloads directory.
 	     *
@@ -1534,15 +1569,15 @@ declare namespace Appwrite {
         /**
          * Get File for View
          *
-         * Get file content by its unique ID. This endpoint is similar to the download
-         * method but returns with no  'Content-Disposition: attachment' header.
+         * Get a file content by its unique ID. This endpoint is similar to the
+         * download method but returns with no  'Content-Disposition: attachment'
+         * header.
 	     *
          * @param {string} fileId
-         * @param {string} as
          * @throws {Error}
          * @return {string}         
          */
-	    getFileView(fileId: string, as?: string): string;
+	    getFileView(fileId: string): string;
 
 	}
 
@@ -1553,7 +1588,8 @@ declare namespace Appwrite {
          *
          * Get a list of all the current user teams. You can use the query params to
          * filter your results. On admin mode, this endpoint will return a list of all
-         * of the project teams. [Learn more about different API modes](/docs/admin).
+         * of the project's teams. [Learn more about different API
+         * modes](/docs/admin).
 	     *
          * @param {string} search
          * @param {number} limit
@@ -1582,7 +1618,7 @@ declare namespace Appwrite {
         /**
          * Get Team
          *
-         * Get team by its unique ID. All team members have read access for this
+         * Get a team by its unique ID. All team members have read access for this
          * resource.
 	     *
          * @param {string} teamId
@@ -1594,7 +1630,7 @@ declare namespace Appwrite {
         /**
          * Update Team
          *
-         * Update team by its unique ID. Only team owners have write access for this
+         * Update a team by its unique ID. Only team owners have write access for this
          * resource.
 	     *
          * @param {string} teamId
@@ -1607,7 +1643,7 @@ declare namespace Appwrite {
         /**
          * Delete Team
          *
-         * Delete team by its unique ID. Only team owners have write access for this
+         * Delete a team by its unique ID. Only team owners have write access for this
          * resource.
 	     *
          * @param {string} teamId
@@ -1619,7 +1655,7 @@ declare namespace Appwrite {
         /**
          * Get Team Memberships
          *
-         * Get team members by the team unique ID. All team members have read access
+         * Get a team members by the team unique ID. All team members have read access
          * for this list of resources.
 	     *
          * @param {string} teamId
@@ -1664,7 +1700,7 @@ declare namespace Appwrite {
          *
          * This endpoint allows a user to leave a team or for a team owner to delete
          * the membership of any other team member. You can also use this endpoint to
-         * delete a user membership even if he didn't accept it.
+         * delete a user membership even if it is not accepted.
 	     *
          * @param {string} teamId
          * @param {string} inviteId
@@ -1677,8 +1713,8 @@ declare namespace Appwrite {
          * Update Team Membership Status
          *
          * Use this endpoint to allow a user to accept an invitation to join a team
-         * after he is being redirected back to your app from the invitation email he
-         * was sent.
+         * after being redirected back to your app from the invitation email recieved
+         * by the user.
 	     *
          * @param {string} teamId
          * @param {string} inviteId
@@ -1696,8 +1732,8 @@ declare namespace Appwrite {
         /**
          * List Users
          *
-         * Get a list of all the project users. You can use the query params to filter
-         * your results.
+         * Get a list of all the project's users. You can use the query params to
+         * filter your results.
 	     *
          * @param {string} search
          * @param {number} limit
@@ -1724,7 +1760,7 @@ declare namespace Appwrite {
         /**
          * Get User
          *
-         * Get user by its unique ID.
+         * Get a user by its unique ID.
 	     *
          * @param {string} userId
          * @throws {Error}
@@ -1733,9 +1769,20 @@ declare namespace Appwrite {
 	    get(userId: string): Promise<object>;
 
         /**
+         * Delete User
+         *
+         * Delete a user by its unique ID.
+	     *
+         * @param {string} userId
+         * @throws {Error}
+         * @return {Promise}         
+         */
+	    deleteUser(userId: string): Promise<object>;
+
+        /**
          * Get User Logs
          *
-         * Get user activity logs list by its unique ID.
+         * Get a user activity logs list by its unique ID.
 	     *
          * @param {string} userId
          * @throws {Error}
@@ -1746,7 +1793,7 @@ declare namespace Appwrite {
         /**
          * Get User Preferences
          *
-         * Get user preferences by its unique ID.
+         * Get the user preferences by its unique ID.
 	     *
          * @param {string} userId
          * @throws {Error}
@@ -1757,8 +1804,8 @@ declare namespace Appwrite {
         /**
          * Update User Preferences
          *
-         * Update user preferences by its unique ID. You can pass only the specific
-         * settings you wish to update.
+         * Update the user preferences by its unique ID. You can pass only the
+         * specific settings you wish to update.
 	     *
          * @param {string} userId
          * @param {object} prefs
@@ -1770,7 +1817,7 @@ declare namespace Appwrite {
         /**
          * Get User Sessions
          *
-         * Get user sessions list by its unique ID.
+         * Get the user sessions list by its unique ID.
 	     *
          * @param {string} userId
          * @throws {Error}
@@ -1781,7 +1828,7 @@ declare namespace Appwrite {
         /**
          * Delete User Sessions
          *
-         * Delete all user sessions by its unique ID.
+         * Delete all user's sessions by using the user's unique ID.
 	     *
          * @param {string} userId
          * @throws {Error}
@@ -1792,7 +1839,7 @@ declare namespace Appwrite {
         /**
          * Delete User Session
          *
-         * Delete user sessions by its unique ID.
+         * Delete a user sessions by its unique ID.
 	     *
          * @param {string} userId
          * @param {string} sessionId
@@ -1804,7 +1851,7 @@ declare namespace Appwrite {
         /**
          * Update User Status
          *
-         * Update user status by its unique ID.
+         * Update the user status by its unique ID.
 	     *
          * @param {string} userId
          * @param {string} status

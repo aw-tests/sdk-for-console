@@ -6,7 +6,7 @@ sdk
     .setKey('919c2d18fb5d4...a2ae413da83346ad2') // Your secret API key
 ;
 
-let promise = sdk.general.redirect();
+let promise = sdk.functions.deleteTag('[FUNCTION_ID]', '[TAG_ID]');
 
 promise.then(function (response) {
     console.log(response); // Success

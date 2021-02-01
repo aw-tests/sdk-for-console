@@ -6,7 +6,7 @@ sdk
     .setKey('919c2d18fb5d4...a2ae413da83346ad2') // Your secret API key
 ;
 
-let promise = sdk.general.upload('[]', null, [], document.getElementById('uploader').files[0]);
+let promise = sdk.account.createJWT();
 
 promise.then(function (response) {
     console.log(response); // Success

@@ -6,7 +6,7 @@ sdk
     .setKey('919c2d18fb5d4...a2ae413da83346ad2') // Your secret API key
 ;
 
-let promise = sdk.general.redirected();
+let promise = sdk.functions.getExecution('[FUNCTION_ID]', '[EXECUTION_ID]');
 
 promise.then(function (response) {
     console.log(response); // Success
