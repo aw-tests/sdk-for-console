@@ -6,7 +6,7 @@ sdk
     .setKey('919c2d18fb5d4...a2ae413da83346ad2') // Your secret API key
 ;
 
-let promise = sdk.users.deleteUser('[USER_ID]');
+let promise = sdk.users.delete('[USER_ID]');
 
 promise.then(function (response) {
     console.log(response); // Success
