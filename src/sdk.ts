@@ -409,20 +409,17 @@ class Appwrite {
          * Update Account Password
          *
          * Update currently logged in user password. For validation, user is required
-         * to pass the password twice.
+         * to pass in the new password, and the old password. For users created with
+         * OAuth and Team Invites, oldPassword is optional.
          *
          * @param {string} password
          * @param {string} oldPassword
          * @throws {AppwriteException}
          * @returns {Promise}
          */
-        updatePassword: async <T extends unknown>(password: string, oldPassword: string): Promise<T> => {
+        updatePassword: async <T extends unknown>(password: string, oldPassword: string = ''): Promise<T> => {
             if (password === undefined) {
                 throw new AppwriteException('Missing required parameter: "password"');
-            }
-
-            if (oldPassword === undefined) {
-                throw new AppwriteException('Missing required parameter: "oldPassword"');
             }
 
             let path = '/account/password';
@@ -497,7 +494,8 @@ class Appwrite {
          * attached to the URL query string. Use the query string params to submit a
          * request to the [PUT
          * /account/recovery](/docs/client/account#accountUpdateRecovery) endpoint to
-         * complete the process.
+         * complete the process. The verification link sent to the user's email
+         * address is valid for 1 hour.
          *
          * @param {string} email
          * @param {string} url
@@ -772,7 +770,8 @@ class Appwrite {
          * should redirect the user back to your app and allow you to complete the
          * verification process by verifying both the **userId** and **secret**
          * parameters. Learn more about how to [complete the verification
-         * process](/docs/client/account#accountUpdateVerification). 
+         * process](/docs/client/account#accountUpdateVerification). The verification
+         * link sent to the user's email address is valid for 7 days.
          * 
          * Please note that in order to avoid a [Redirect
          * Attack](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md),
@@ -2739,6 +2738,73 @@ class Appwrite {
         },
 
         /**
+         * Update Project users limit
+         *
+         *
+         * @param {string} projectId
+         * @param {string} limit
+         * @throws {AppwriteException}
+         * @returns {Promise}
+         */
+        updateAuthLimit: async <T extends unknown>(projectId: string, limit: string): Promise<T> => {
+            if (projectId === undefined) {
+                throw new AppwriteException('Missing required parameter: "projectId"');
+            }
+
+            if (limit === undefined) {
+                throw new AppwriteException('Missing required parameter: "limit"');
+            }
+
+            let path = '/projects/{projectId}/auth/limit'.replace('{projectId}', projectId);
+            let payload: Payload = {};
+
+            if (typeof limit !== 'undefined') {
+                payload['limit'] = limit;
+            }
+
+            const uri = new URL(this.config.endpoint + path);
+            return await this.call('patch', uri, {
+                'content-type': 'application/json',
+            }, payload);
+        },
+
+        /**
+         * Update Project auth method status. Use this endpoint to enable or disable a given auth method for this project.
+         *
+         *
+         * @param {string} projectId
+         * @param {string} method
+         * @param {boolean} status
+         * @throws {AppwriteException}
+         * @returns {Promise}
+         */
+        updateAuthStatus: async <T extends unknown>(projectId: string, method: string, status: boolean): Promise<T> => {
+            if (projectId === undefined) {
+                throw new AppwriteException('Missing required parameter: "projectId"');
+            }
+
+            if (method === undefined) {
+                throw new AppwriteException('Missing required parameter: "method"');
+            }
+
+            if (status === undefined) {
+                throw new AppwriteException('Missing required parameter: "status"');
+            }
+
+            let path = '/projects/{projectId}/auth/{method}'.replace('{projectId}', projectId).replace('{method}', method);
+            let payload: Payload = {};
+
+            if (typeof status !== 'undefined') {
+                payload['status'] = status;
+            }
+
+            const uri = new URL(this.config.endpoint + path);
+            return await this.call('patch', uri, {
+                'content-type': 'application/json',
+            }, payload);
+        },
+
+        /**
          * List Domains
          *
          *
@@ -4348,6 +4414,42 @@ class Appwrite {
         },
 
         /**
+         * Update Membership Roles
+         *
+         *
+         * @param {string} teamId
+         * @param {string} membershipId
+         * @param {string[]} roles
+         * @throws {AppwriteException}
+         * @returns {Promise}
+         */
+        updateMembershipRoles: async <T extends unknown>(teamId: string, membershipId: string, roles: string[]): Promise<T> => {
+            if (teamId === undefined) {
+                throw new AppwriteException('Missing required parameter: "teamId"');
+            }
+
+            if (membershipId === undefined) {
+                throw new AppwriteException('Missing required parameter: "membershipId"');
+            }
+
+            if (roles === undefined) {
+                throw new AppwriteException('Missing required parameter: "roles"');
+            }
+
+            let path = '/teams/{teamId}/memberships/{membershipId}'.replace('{teamId}', teamId).replace('{membershipId}', membershipId);
+            let payload: Payload = {};
+
+            if (typeof roles !== 'undefined') {
+                payload['roles'] = roles;
+            }
+
+            const uri = new URL(this.config.endpoint + path);
+            return await this.call('patch', uri, {
+                'content-type': 'application/json',
+            }, payload);
+        },
+
+        /**
          * Delete Team Membership
          *
          * This endpoint allows a user to leave a team or for a team owner to delete
@@ -4355,20 +4457,20 @@ class Appwrite {
          * delete a user membership even if it is not accepted.
          *
          * @param {string} teamId
-         * @param {string} inviteId
+         * @param {string} membershipId
          * @throws {AppwriteException}
          * @returns {Promise}
          */
-        deleteMembership: async <T extends unknown>(teamId: string, inviteId: string): Promise<T> => {
+        deleteMembership: async <T extends unknown>(teamId: string, membershipId: string): Promise<T> => {
             if (teamId === undefined) {
                 throw new AppwriteException('Missing required parameter: "teamId"');
             }
 
-            if (inviteId === undefined) {
-                throw new AppwriteException('Missing required parameter: "inviteId"');
+            if (membershipId === undefined) {
+                throw new AppwriteException('Missing required parameter: "membershipId"');
             }
 
-            let path = '/teams/{teamId}/memberships/{inviteId}'.replace('{teamId}', teamId).replace('{inviteId}', inviteId);
+            let path = '/teams/{teamId}/memberships/{membershipId}'.replace('{teamId}', teamId).replace('{membershipId}', membershipId);
             let payload: Payload = {};
 
             const uri = new URL(this.config.endpoint + path);
@@ -4385,19 +4487,19 @@ class Appwrite {
          * by the user.
          *
          * @param {string} teamId
-         * @param {string} inviteId
+         * @param {string} membershipId
          * @param {string} userId
          * @param {string} secret
          * @throws {AppwriteException}
          * @returns {Promise}
          */
-        updateMembershipStatus: async <T extends unknown>(teamId: string, inviteId: string, userId: string, secret: string): Promise<T> => {
+        updateMembershipStatus: async <T extends unknown>(teamId: string, membershipId: string, userId: string, secret: string): Promise<T> => {
             if (teamId === undefined) {
                 throw new AppwriteException('Missing required parameter: "teamId"');
             }
 
-            if (inviteId === undefined) {
-                throw new AppwriteException('Missing required parameter: "inviteId"');
+            if (membershipId === undefined) {
+                throw new AppwriteException('Missing required parameter: "membershipId"');
             }
 
             if (userId === undefined) {
@@ -4408,7 +4510,7 @@ class Appwrite {
                 throw new AppwriteException('Missing required parameter: "secret"');
             }
 
-            let path = '/teams/{teamId}/memberships/{inviteId}/status'.replace('{teamId}', teamId).replace('{inviteId}', inviteId);
+            let path = '/teams/{teamId}/memberships/{membershipId}/status'.replace('{teamId}', teamId).replace('{membershipId}', membershipId);
             let payload: Payload = {};
 
             if (typeof userId !== 'undefined') {
@@ -4713,11 +4815,11 @@ class Appwrite {
          * Update the user status by its unique ID.
          *
          * @param {string} userId
-         * @param {string} status
+         * @param {number} status
          * @throws {AppwriteException}
          * @returns {Promise}
          */
-        updateStatus: async <T extends unknown>(userId: string, status: string): Promise<T> => {
+        updateStatus: async <T extends unknown>(userId: string, status: number): Promise<T> => {
             if (userId === undefined) {
                 throw new AppwriteException('Missing required parameter: "userId"');
             }
