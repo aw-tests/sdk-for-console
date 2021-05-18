@@ -32,6 +32,7 @@ class Appwrite {
     };
     headers: Headers = {
         'x-sdk-version': 'appwrite:web:1.0.0',
+        'X-Appwrite-Response-Format': '0.8.0',
     };
 
     /**
@@ -165,8 +166,12 @@ class Appwrite {
             let data = null;
             const response = await fetch(url.toString(), options);
 
-            if (response.headers.get("content-type")?.includes('application/json')) {
+            if (response.headers.get("content-type")?.includes("application/json")) {
                 data = await response.json();
+            } else {
+                data = {
+                    message: await response.text()
+                };
             }
             
             if (400 <= response.status) {
