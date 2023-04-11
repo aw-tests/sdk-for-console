@@ -1,12 +1,15 @@
-let sdk = new Appwrite();
+import { Client, Health } from "@appwrite.io/console";
 
-sdk
+const client = new Client();
+
+const health = new Health(client);
+
+client
     .setEndpoint('https://[HOSTNAME_OR_IP]/v1') // Your API Endpoint
     .setProject('5df5acd0d48c2') // Your project ID
-    .setKey('919c2d18fb5d4...a2ae413da83346ad2') // Your secret API key
 ;
 
-let promise = sdk.health.getQueueFunctions();
+const promise = health.getQueueFunctions();
 
 promise.then(function (response) {
     console.log(response); // Success
