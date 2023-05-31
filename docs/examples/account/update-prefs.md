@@ -1,12 +1,15 @@
-let sdk = new Appwrite();
+import { Client, Account } from "@appwrite.io/console";
 
-sdk
+const client = new Client();
+
+const account = new Account(client);
+
+client
     .setEndpoint('https://[HOSTNAME_OR_IP]/v1') // Your API Endpoint
     .setProject('5df5acd0d48c2') // Your project ID
-    .setJWT('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...') // Your secret JSON Web Token
 ;
 
-let promise = sdk.account.updatePrefs({});
+const promise = account.updatePrefs({});
 
 promise.then(function (response) {
     console.log(response); // Success

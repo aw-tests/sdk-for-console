@@ -1,15 +1,14 @@
 # Appwrite Console SDK
 
 ![License](https://img.shields.io/github/license/appwrite/sdk-for-console.svg?style=flat-square)
-![Version](https://img.shields.io/badge/api%20version-0.8.0-blue.svg?style=flat-square)
-[![Twitter Account](https://img.shields.io/twitter/follow/appwrite_io?color=00acee&label=twitter&style=flat-square)](https://twitter.com/appwrite_io)
+![Version](https://img.shields.io/badge/api%20version-1.3.2-blue.svg?style=flat-square)
+[![Build Status](https://img.shields.io/travis/com/appwrite/sdk-generator?style=flat-square)](https://travis-ci.com/appwrite/sdk-generator)
+[![Twitter Account](https://img.shields.io/twitter/follow/appwrite?color=00acee&label=twitter&style=flat-square)](https://twitter.com/appwrite)
 [![Discord](https://img.shields.io/discord/564160730845151244?label=discord&style=flat-square)](https://appwrite.io/discord)
 
-**This SDK is compatible with Appwrite server version 0.8.x. For older versions, please check [previous releases](https://github.com/appwrite/sdk-for-console/releases).**
+**This SDK is compatible with Appwrite server version latest. For older versions, please check [previous releases](https://github.com/appwrite/sdk-for-console/releases).**
 
-Appwrite is an open-source backend as a service server that abstract and simplify complex and repetitive development tasks behind a very simple to use REST API. Appwrite aims to help you develop your apps faster and in a more secure way.
-                        Use the Console SDK to integrate your app with the Appwrite server to easily start interacting with all of Appwrite backend APIs and tools.
-                        For full API documentation and tutorials go to [https://appwrite.io/docs](https://appwrite.io/docs)
+Appwrite is an open-source backend as a service server that abstract and simplify complex and repetitive development tasks behind a very simple to use REST API. Appwrite aims to help you develop your apps faster and in a more secure way. Use the Console SDK to integrate your app with the Appwrite server to easily start interacting with all of Appwrite backend APIs and tools. For full API documentation and tutorials go to [https://appwrite.io/docs](https://appwrite.io/docs)
 
 ![Appwrite](https://appwrite.io/images/github.png)
 
@@ -20,13 +19,13 @@ Appwrite is an open-source backend as a service server that abstract and simplif
 To install via [NPM](https://www.npmjs.com/):
 
 ```bash
-npm install appwrite --save
+npm install @appwrite.io/console --save
 ```
 
 If you're using a bundler (like [Rollup](https://rollupjs.org/) or [webpack](https://webpack.js.org/)), you can import the Appwrite module when you need it:
 
 ```js
-import { Appwrite } from "appwrite";
+import { Client, Account } from "@appwrite.io/console";
 ```
 
 ### CDN
@@ -34,7 +33,7 @@ import { Appwrite } from "appwrite";
 To install with a CDN (content delivery network) add the following scripts to the bottom of your <body> tag, but before you use any Appwrite services:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/appwrite@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@appwrite.io/console@0.1.0"></script>
 ```
 
 
@@ -46,78 +45,61 @@ For you to init your SDK and interact with Appwrite services you need to add a w
 From the options, choose to add a **Web** platform and add your client app hostname. By adding your hostname to your project platform you are allowing cross-domain communication between your project and the Appwrite API.
 
 ### Init your SDK
-Initialize your SDK code with your project ID which can be found in your project settings page.
+Initialize your SDK with your Appwrite server API endpoint and project ID which can be found in your project settings page.
 
 ```js
 // Init your Web SDK
-const appwrite = new Appwrite();
+const client = new Client();
 
-appwrite
+client
     .setEndpoint('http://localhost/v1') // Your Appwrite Endpoint
     .setProject('455x34dfkj') // Your project ID
-    .setSelfSigned() // Use only on dev mode with a self-signed SSL cert
 ;
 ```
 
 ### Make Your First Request
-Once your SDK object is set, access any of the Appwrite services and choose any request to send. Full documentation for any service method you would like to use can be found in your SDK documentation or in the API References section.
+Once your SDK object is set, access any of the Appwrite services and choose any request to send. Full documentation for any service method you would like to use can be found in your SDK documentation or in the [API References](https://appwrite.io/docs) section.
 
 ```js
+const account = new Account(client);
+
 // Register User
-appwrite
-    .account.create('me@example.com', 'password', 'Jane Doe')
-        .then(function (response) {
-            console.log(response);
-        }, function (error) {
-            console.log(error);
-        });
+account.create(ID.unique(), 'me@example.com', 'password', 'Jane Doe')
+    .then(function (response) {
+        console.log(response);
+    }, function (error) {
+        console.log(error);
+    });
 
 ```
 
 ### Full Example
 ```js
 // Init your Web SDK
-const appwrite = new Appwrite();
+const client = new Client();
 
-appwrite
+client
     .setEndpoint('http://localhost/v1') // Your Appwrite Endpoint
     .setProject('455x34dfkj')
-    .setSelfSigned() // Use only on dev mode with a self-signed SSL cert
 ;
 
+const account = new Account(client);
+
 // Register User
-appwrite
-    .account.create('me@example.com', 'password', 'Jane Doe')
-        .then(function (response) {
-            console.log(response);
-        }, function (error) {
-            console.log(error);
-        });
+account.create(ID.unique(), 'me@example.com', 'password', 'Jane Doe')
+    .then(function (response) {
+        console.log(response);
+    }, function (error) {
+        console.log(error);
+    });
 ```
 
 ### Learn more
-You can use followng resources to learn more and get help
+You can use the following resources to learn more and get help
 - 🚀 [Getting Started Tutorial](https://appwrite.io/docs/getting-started-for-flutter)
 - 📜 [Appwrite Docs](https://appwrite.io/docs)
 - 💬 [Discord Community](https://appwrite.io/discord)
 - 🚂 [Appwrite Flutter Playground](https://github.com/appwrite/playground-for-flutter)
-
-
-## Getting Started
-
-Initialise the Appwrite SDK in your code, and setup your API credentials:
-
-```js
-
-// Init your Web SDK
-var appwrite = new Appwrite();
-
-appwrite
-    .setEndpoint('http://localhost/v1') // Set only when using self-hosted solution
-    .setProject('455x34dfkj') // Your Appwrite Project UID
-;
-
-```
 
 
 ## Contribution
