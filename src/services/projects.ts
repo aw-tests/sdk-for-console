@@ -1220,7 +1220,7 @@ export class Projects extends Service {
          * @throws {AppwriteException}
          * @returns {Promise}
          */
-        async getEmailTemplate(projectId: string, type: string, locale: string): Promise<Models.EmailTemplate> {
+        async deleteEmailTemplate(projectId: string, type: string, locale: string): Promise<Models.EmailTemplate> {
             if (typeof projectId === 'undefined') {
                 throw new AppwriteException('Missing required parameter: "projectId"');
             }
@@ -1325,7 +1325,7 @@ export class Projects extends Service {
          * @throws {AppwriteException}
          * @returns {Promise}
          */
-        async getSmsTemplate(projectId: string, type: string, locale: string): Promise<Models.SmsTemplate> {
+        async deleteSmsTemplate(projectId: string, type: string, locale: string): Promise<Models.SmsTemplate> {
             if (typeof projectId === 'undefined') {
                 throw new AppwriteException('Missing required parameter: "projectId"');
             }
