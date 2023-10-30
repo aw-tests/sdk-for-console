@@ -1,0 +1,15 @@
+export enum Service {
+    Account = 'account',
+    Avatars = 'avatars',
+    Databases = 'databases',
+    Locale = 'locale',
+    Health = 'health',
+    Storage = 'storage',
+    Teams = 'teams',
+    Users = 'users',
+    Vcs = 'vcs',
+    Functions = 'functions',
+    Proxy = 'proxy',
+    Graphql = 'graphql',
+    Migrations = 'migrations',
+}

@@ -1,0 +1,15 @@
+export enum PlatformType {
+    Web = 'web',
+    FlutterWeb = 'flutter-web',
+    FlutterIos = 'flutter-ios',
+    FlutterAndroid = 'flutter-android',
+    FlutterLinux = 'flutter-linux',
+    FlutterMacos = 'flutter-macos',
+    FlutterWindows = 'flutter-windows',
+    AppleIos = 'apple-ios',
+    AppleMacos = 'apple-macos',
+    AppleWatchos = 'apple-watchos',
+    AppleTvos = 'apple-tvos',
+    Android = 'android',
+    Unity = 'unity',
+}
