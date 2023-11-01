@@ -9,6 +9,6 @@ client
     .setProject('5df5acd0d48c2') // Your project ID
 ;
 
-const result = avatars.getFlag(Flag.Af);
+const result = avatars.getFlag(Flag.Afghanistan);
 
 console.log(result); // Resource URL
