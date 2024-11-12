@@ -1,3 +1,10 @@
+/**
+ * Appwrite Console SDK
+ *
+ * This SDK is compatible with Appwrite server version 1.6.x. 
+ * For older versions, please check
+ * [previous releases](https://github.com/appwrite/sdk-for-console/releases).
+ */
 export { Client, Query, AppwriteException } from './client';
 export { Account } from './services/account';
 export { Avatars } from './services/avatars';
@@ -8,6 +15,7 @@ export { Functions } from './services/functions';
 export { Graphql } from './services/graphql';
 export { Health } from './services/health';
 export { Locale } from './services/locale';
+export { Messaging } from './services/messaging';
 export { Migrations } from './services/migrations';
 export { Project } from './services/project';
 export { Projects } from './services/projects';
@@ -21,25 +29,37 @@ export type { QueryTypes, QueryTypesList } from './query';
 export { Permission } from './permission';
 export { Role } from './role';
 export { ID } from './id';
-export { Provider } from './enums/provider';
+export { AuthenticatorType } from './enums/authenticator-type';
+export { AuthenticationFactor } from './enums/authentication-factor';
+export { OAuthProvider } from './enums/o-auth-provider';
 export { Browser } from './enums/browser';
 export { CreditCard } from './enums/credit-card';
 export { Flag } from './enums/flag';
-export { Range } from './enums/range';
+export { DatabaseUsageRange } from './enums/database-usage-range';
 export { RelationshipType } from './enums/relationship-type';
 export { RelationMutate } from './enums/relation-mutate';
 export { IndexType } from './enums/index-type';
 export { Runtime } from './enums/runtime';
-export { Method } from './enums/method';
+export { FunctionUsageRange } from './enums/function-usage-range';
+export { ExecutionMethod } from './enums/execution-method';
+export { Name } from './enums/name';
+export { SmtpEncryption } from './enums/smtp-encryption';
+export { ProjectUsageRange } from './enums/project-usage-range';
 export { Region } from './enums/region';
-export { Provider } from './enums/provider';
+export { Api } from './enums/api';
+export { AuthMethod } from './enums/auth-method';
 export { PlatformType } from './enums/platform-type';
-export { Service } from './enums/service';
-export { Secure } from './enums/secure';
-export { Type } from './enums/type';
-export { Locale } from './enums/locale';
+export { ApiService } from './enums/api-service';
+export { SMTPSecure } from './enums/s-m-t-p-secure';
+export { EmailTemplateType } from './enums/email-template-type';
+export { EmailTemplateLocale } from './enums/email-template-locale';
+export { SmsTemplateType } from './enums/sms-template-type';
+export { SmsTemplateLocale } from './enums/sms-template-locale';
 export { ResourceType } from './enums/resource-type';
 export { Compression } from './enums/compression';
 export { ImageGravity } from './enums/image-gravity';
 export { ImageFormat } from './enums/image-format';
-export { PasswordVersion } from './enums/password-version';
+export { StorageUsageRange } from './enums/storage-usage-range';
+export { PasswordHash } from './enums/password-hash';
+export { UserUsageRange } from './enums/user-usage-range';
+export { MessagingProviderType } from './enums/messaging-provider-type';
